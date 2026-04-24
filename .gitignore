@@ -1,26 +1,2 @@
-# Dependencies
-node_modules/
-
-# Build outputs
-dist/
-build/
-
-# Turbo
-.turbo/
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# Logs
-*.log
-npm-debug.log*
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/settings.json
-.idea/
+.qwen/
+gha-creds-*.json
