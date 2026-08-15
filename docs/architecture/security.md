@@ -3,11 +3,11 @@
 - **Date:** 2026-08-13
 - **Status:** Target design. Controls land phase by phase.
 
-## 1. Purpose and posture
+## Purpose and posture
 
 Bolso Firme handles a single user's complete financial picture: what they earn, what they spend, where they spend it, and what they are saving toward. That data is sensitive by default, so security here is shift-left: every control described below is designed together with the module that needs it, written into the module's acceptance criteria, and reviewed in the same pull request as the feature — never bolted on by a later audit pass. A module is not done when it works; it is done when it works, validates its inputs, refuses what it does not recognise, and leaves an audit trail. This document describes the **target** design for the whole system. Nothing here is claimed as implemented today: authentication and secret handling land in Phase 0, encryption and audit logging harden alongside the features that produce sensitive rows, and tenant isolation becomes a first-class acceptance criterion in Phase 5. See [the roadmap](../product/roadmap.md) for the phase in which each control is expected to arrive, and [the architecture overview](overview.md) for the layer vocabulary (`domain`, `application`, `infrastructure`, `interface`) used throughout.
 
-## 2. Controls
+## Controls
 
 | Domain | Implementation |
 |---|---|
@@ -21,7 +21,7 @@ Bolso Firme handles a single user's complete financial picture: what they earn, 
 
 Each row is expanded in the sections that follow, except authorization and validation, which are short enough to state fully here. Authorization is enforced at the `interface` layer by NestJS guards reading role metadata from a `@Roles('admin')` decorator, so a route without an explicit decision is denied rather than open; ownership checks live one layer deeper, in the `application` use case, because "is this row yours" is a domain question and not a routing one. Validation runs through the shared Zod schemas defined once in the shared package, wired into a NestJS `ValidationPipe` configured with `whitelist: true` and `forbidNonWhitelisted: true`: unknown properties are stripped, and a payload that carried them is then rejected outright rather than silently accepted in a reduced form. That combination is deliberate — stripping alone would let a client believe a field was honoured when it was discarded.
 
-## 3. Authentication flow
+## Authentication flow
 
 Authentication issues two tokens with deliberately different lifetimes and storage. The **access token** is a short-lived JWT carrying the user identifier and roles. It is held in memory by the frontend and never written to `localStorage`, `sessionStorage`, or a readable cookie, so a successful cross-site scripting payload has a very small window and no persistent artifact to steal. The **refresh token** is delivered in a cookie marked `HttpOnly`, `SameSite=Strict`, and `Secure`, which puts it out of reach of page JavaScript and out of scope for cross-site requests.
 
@@ -31,7 +31,7 @@ That bookkeeping exists for one reason. If an invalidated refresh token is ever 
 
 Logout revokes the current family server-side rather than only clearing the cookie, because a cookie cleared in one browser says nothing about a token copied elsewhere.
 
-## 4. Data protection
+## Data protection
 
 Sensitive data in this product is not an abstract category, so it is enumerated rather than gestured at:
 
@@ -47,7 +47,7 @@ These are encrypted **at rest with AES-256**, covering the database volume and a
 
 **LGPD deletion is a guarantee, not a best effort.** A deletion request removes the user's personal data — profile, transactions, budgets, goals, portfolio, imported files, and authentication material — across primary storage and backups within the retention window published to the user. The immutable `audit_log` table is the single deliberate exception, and it is narrow: what remains is a non-identifying record that an action of a given type occurred at a given time against a now-anonymised subject identifier. It retains no name, no email, no amount, and no description. This keeps the audit trail meaningful for security investigation and for proving that the deletion itself was carried out, while leaving nothing behind that reconstructs the person. The tension between an append-only audit log and a right to erasure is real, and this is the resolution the project commits to.
 
-## 5. Threat modeling
+## Threat modeling
 
 Every module is threat-modeled with **STRIDE** — Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege — and the modeling happens **while the module is being designed, not after it ships**. The output is a short list of concrete threats and the specific control that addresses each, recorded with the module's design notes and revisited when the module changes shape. Threat modeling after release produces a backlog; threat modeling during design produces acceptance criteria.
 
@@ -63,7 +63,7 @@ Spoofing appears as a file claiming to originate from an institution it does not
 
 The core mitigation is structural and applies to all of it: **the file is parsed into a Zod-validated shape before anything is persisted, and file content is never evaluated.** Concretely — the parser runs with external entity resolution disabled and with size, row-count, and time limits enforced before parsing begins; the extracted rows are validated against the shared Zod transaction schema, so amounts must be numbers in a plausible range, dates must be real dates, and unknown columns are dropped rather than carried along; anything failing validation is rejected as a whole file with a generic error rather than partially imported; every persisted value is a typed value produced by the schema, never a raw string copied from the source; and no field is ever passed to an evaluator, a template renderer, or a string-concatenated query. Text extracted from a statement is treated exactly like text typed by an anonymous stranger, because that is what it is. The same rule extends to the LLM boundary: a description string sent for auto-categorization is data, and the response comes back through its own Zod schema before it is allowed to influence a row.
 
-## 6. Auditability
+## Auditability
 
 All application logs are **structured JSON** — one object per event, with stable field names — so they can be queried and alerted on rather than read. Human-readable formatting is a local development convenience only.
 
@@ -71,7 +71,7 @@ Every request is assigned an **`x-request-id`** at the edge, or adopts the one s
 
 Security-relevant events are additionally written to an **immutable `audit_log` table**. The table is append-only by design and by permission: the application's database role holds `INSERT` and `SELECT` on it and no `UPDATE` or `DELETE`, so an application-level bug or a compromised application credential cannot rewrite history. Corrections are new rows, never edits. Each entry records the actor, the action, the affected resource type and identifier, the timestamp, the source address, and the `x-request-id` that ties it back to the full log stream — and, per the masking rule, never the sensitive values themselves. Logins, failed authentication attempts, refresh-token reuse detections and the family revocations they trigger, role and permission changes, data exports, and deletion requests all land here. Phase 4's payment flows and Phase 5's shared-budget permission changes both depend on this table being trustworthy.
 
-## 7. Multi-tenant isolation
+## Multi-tenant isolation
 
 Through Phase 4 the model is single-tenant in the simplest possible sense: every row belongs to exactly one user, and a query that forgets to filter by owner returns nothing useful because there is nothing else in scope for that user's session. **Phase 5 changes that.** Groups, invitations, and shared budgets introduce records that legitimately belong to more than one person, with different roles over the same data, and at that point "filter by owner" stops being a formality and becomes the load-bearing security control of the entire product.
 
