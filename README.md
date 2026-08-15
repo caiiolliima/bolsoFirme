@@ -135,4 +135,4 @@ TBD — pending Phase 0 scaffolding.
 
 ## License
 
-Released under the MIT License.
+Released under the MIT License. See [LICENSE](LICENSE) for the full text.
