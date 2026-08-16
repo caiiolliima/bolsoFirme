@@ -27,15 +27,20 @@ and none of it exists as running code yet.
 | Backend | [NestJS 10+](../adr/0002-nextjs-nestjs-typescript-stack.md) + TypeScript | Modular architecture, native DI, pipes and guards, testable, scalable |
 | Database | [PostgreSQL 16 + Prisma ORM](../adr/0003-postgresql-prisma-orm.md) | Transactions, JSONB, indexing, `pgvector` extension for future AI work, type-safe access |
 | Validation | [Zod (shared package)](../adr/0004-zod-shared-validation-contract.md) | Single contract across frontend and backend, runtime validation plus type inference |
-| Local infra | Docker Compose + [Turborepo](../adr/0005-turborepo-monorepo-tooling.md) | Reproducible environment, incremental caching, parallel builds |
+| Local infra | Docker Compose + [pnpm workspaces](../adr/0005-pnpm-workspaces-monorepo-tooling.md) | Reproducible environment, topological task ordering, no added tooling |
 | Cloud infra | AWS or Azure (future) | Containers identical to local, scale on demand |
 
-Two entries carry a caveat worth stating in prose. Turborepo is the current
-leaning rather than a settled choice — ADR-0005 is `Proposed`, not `Accepted`,
-and the monorepo task runner is evaluated before Phase 0 scaffolding begins. The
-cloud row is intentionally undecided: the deployment target is containers, and
-because the local environment already runs the same containers under Docker
-Compose, picking a provider is a late decision rather than an early one.
+One entry carries a caveat worth stating in prose. The cloud row is
+intentionally undecided: the deployment target is containers, and because the
+local environment already runs the same containers under Docker Compose, picking
+a provider is a late decision rather than an early one.
+
+The local-infra row is worth reading precisely. `pnpm -r` already runs tasks in
+dependency order, so the workspace needs no task runner to build correctly. What
+it gives up is incremental caching, which ADR-0005 judges not worth its
+configuration at two applications and three packages — and which that ADR pairs
+with a measured trigger for adopting Turborepo if build times outgrow the
+decision.
 
 The single unifying property of the table is that TypeScript runs at every layer
 of it. A Zod schema written once in the shared package validates a form in the
@@ -136,7 +141,7 @@ bolso-firme/
 │   ├── prompts/      # Versioned LLM prompts (v1.0, v1.1, ...)
 │   └── config/       # ESLint, Prettier, TSConfig, Jest/Vitest
 ├── docker-compose.yml
-└── turbo.json
+└── pnpm-workspace.yaml
 ```
 
 - **`apps/web/`** — the Next.js 14+ frontend, using the App Router. It renders
@@ -163,10 +168,12 @@ bolso-firme/
 - **`docker-compose.yml`** — the local environment, bringing up the API and
   PostgreSQL 16 so the entire system runs on one command and the containers match
   what is eventually deployed.
-- **`turbo.json`** — the task graph and cache configuration for Turborepo, which
-  is what allows unchanged packages to skip rebuilds. It is listed here because
-  it is where the current proposal points; the runner itself is still open in
-  ADR-0005.
+- **`pnpm-workspace.yaml`** — the workspace definition, listing which directories
+  hold packages. It is what lets `apps/api` import from `packages/shared` by name
+  and what gives `pnpm -r` the dependency graph it builds in order. Task
+  orchestration lives in the root `package.json` scripts beside it, with no
+  separate runner; the reasoning, and the measured trigger that would change it,
+  are in [ADR-0005](../adr/0005-pnpm-workspaces-monorepo-tooling.md).
 
 This layout describes the target structure. It lands in Phase 0, together with
 the pipeline that builds it.
@@ -177,6 +184,6 @@ the pipeline that builds it.
 - [ADR-0002: Next.js, NestJS, and TypeScript stack](../adr/0002-nextjs-nestjs-typescript-stack.md) — TypeScript everywhere, Next.js 14+ with the App Router on the frontend, NestJS 10+ on the backend, and why Remix, Express, and a non-TypeScript backend were rejected.
 - [ADR-0003: PostgreSQL and Prisma ORM](../adr/0003-postgresql-prisma-orm.md) — PostgreSQL 16 for ACID guarantees, JSONB, and future `pgvector` work, with Prisma as the type-safe data-access layer.
 - [ADR-0004: Zod as the shared validation contract](../adr/0004-zod-shared-validation-contract.md) — every cross-boundary shape defined once as a Zod schema in the shared package, with TypeScript types inferred from it rather than declared separately.
-- [ADR-0005: Turborepo as monorepo tooling](../adr/0005-turborepo-monorepo-tooling.md) — the monorepo task runner. Still `Proposed` rather than `Accepted`; Nx and plain workspaces remain live options pending an evaluation before Phase 0.
+- [ADR-0005: pnpm workspaces as monorepo tooling](../adr/0005-pnpm-workspaces-monorepo-tooling.md) — workspaces and root scripts, with no task runner. Records the measured trigger that would justify adopting Turborepo later.
 - [ADR-0006: LLM guardrails and deterministic fallback](../adr/0006-llm-guardrails-deterministic-fallback.md) — every model call treated as an untrusted input source: versioned prompts, Zod-validated output, bounded temperature, logged cost, and a deterministic path that runs whenever the model fails.
 - [ADR template](../adr/template.md) — the section layout every decision record follows.

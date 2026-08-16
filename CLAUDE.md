@@ -36,7 +36,7 @@ quality gates, is in
 | Backend | NestJS 10+ + TypeScript | [ADR-0002](docs/adr/0002-nextjs-nestjs-typescript-stack.md) |
 | Database | PostgreSQL 16 + Prisma ORM | [ADR-0003](docs/adr/0003-postgresql-prisma-orm.md) |
 | Validation | Zod (shared package) | [ADR-0004](docs/adr/0004-zod-shared-validation-contract.md) |
-| Local infra | Docker Compose + Turborepo | [ADR-0005](docs/adr/0005-turborepo-monorepo-tooling.md) (`Proposed`) |
+| Local infra | Docker Compose + pnpm workspaces | [ADR-0005](docs/adr/0005-pnpm-workspaces-monorepo-tooling.md) |
 | AI/LLM | Versioned prompts, Zod-validated output, deterministic fallback | [ADR-0006](docs/adr/0006-llm-guardrails-deterministic-fallback.md) |
 
 TypeScript runs at every layer, which is the point of the table: a Zod schema
@@ -72,7 +72,7 @@ bolso-firme/
 │   ├── prompts/      # Versioned LLM prompts (v1.0, v1.1, ...)
 │   └── config/       # ESLint, Prettier, TSConfig, Jest/Vitest
 ├── docker-compose.yml
-└── turbo.json
+└── pnpm-workspace.yaml
 ```
 
 This describes the target structure, not the current tree. It lands in Phase 0
@@ -112,7 +112,7 @@ TBD — pending Phase 0 scaffolding.
 - [docs/adr/0002-nextjs-nestjs-typescript-stack.md](docs/adr/0002-nextjs-nestjs-typescript-stack.md) — TypeScript everywhere, Next.js 14+ on the frontend, NestJS 10+ on the backend.
 - [docs/adr/0003-postgresql-prisma-orm.md](docs/adr/0003-postgresql-prisma-orm.md) — PostgreSQL 16 for ACID guarantees, JSONB, and future `pgvector` work, with Prisma as the data-access layer.
 - [docs/adr/0004-zod-shared-validation-contract.md](docs/adr/0004-zod-shared-validation-contract.md) — one validation contract across frontend, backend, and the LLM boundary.
-- [docs/adr/0005-turborepo-monorepo-tooling.md](docs/adr/0005-turborepo-monorepo-tooling.md) — monorepo task runner. Deliberately `Proposed` rather than `Accepted`; Nx and plain workspaces are still live options.
+- [docs/adr/0005-pnpm-workspaces-monorepo-tooling.md](docs/adr/0005-pnpm-workspaces-monorepo-tooling.md) — pnpm workspaces and root scripts, with no task runner; includes the measured trigger for adopting Turborepo later.
 - [docs/adr/0006-llm-guardrails-deterministic-fallback.md](docs/adr/0006-llm-guardrails-deterministic-fallback.md) — how model output is constrained in a financial domain, and what happens when a call fails.
 - [docs/adr/template.md](docs/adr/template.md) — the section layout every decision record follows.
 

@@ -42,9 +42,10 @@ For a technical reader, these are the parts worth opening:
 
 - **Architectural decisions are recorded, not assumed.** Six ADRs state the
   context, the decision, the consequences that hurt, and the alternatives that
-  were rejected with the specific trade-off that killed each one. ADR-0005 is
-  still `Proposed` and carries open questions, because pretending a decision is
-  settled when it is not is the failure mode ADRs exist to prevent.
+  were rejected with the specific trade-off that killed each one. ADR-0005 was
+  deliberately held at `Proposed` with its open questions written down, then
+  closed in a later session once those questions had answers — and it records a
+  measured trigger for revisiting rather than a promise to think about it again.
 - **LLM integration is designed around validation and fallback, not around API
   calls.** Every model call is treated as an untrusted input source: prompts are
   versioned files under `/packages/prompts/`, output is validated against a Zod
@@ -75,7 +76,7 @@ For a technical reader, these are the parts worth opening:
 | Backend | NestJS 10+ + TypeScript | Modular architecture, native DI, pipes and guards, testable, scalable |
 | Database | PostgreSQL 16 + Prisma ORM | Transactions, JSONB, indexing, `pgvector` extension for future AI work, type-safe access |
 | Validation | Zod (shared package) | Single contract across frontend and backend, runtime validation plus type inference |
-| Local infra | Docker Compose + Turborepo | Reproducible environment, incremental caching, parallel builds |
+| Local infra | Docker Compose + pnpm workspaces | Reproducible environment, topological task ordering, no added tooling |
 | Cloud infra | AWS or Azure (future) | Containers identical to local, scale on demand |
 
 Every row above is backed by a decision record; see the Decisions group below
@@ -106,7 +107,7 @@ for the reasoning and the rejected alternatives.
 | [ADR-0002: TypeScript everywhere with Next.js and NestJS](docs/adr/0002-nextjs-nestjs-typescript-stack.md) | Frontend, backend, and language selection for a solo developer working across the whole stack |
 | [ADR-0003: PostgreSQL 16 with Prisma ORM](docs/adr/0003-postgresql-prisma-orm.md) | The persistence engine and the data-access layer, chosen for transactional correctness over financial data |
 | [ADR-0004: Zod as the shared validation contract](docs/adr/0004-zod-shared-validation-contract.md) | One schema per cross-boundary shape, with TypeScript types inferred from the validator rather than declared beside it |
-| [ADR-0005: Turborepo as monorepo tooling](docs/adr/0005-turborepo-monorepo-tooling.md) | Monorepo task running and caching. Still `Proposed`, with open questions to resolve before Phase 0 scaffolding |
+| [ADR-0005: pnpm workspaces as monorepo tooling](docs/adr/0005-pnpm-workspaces-monorepo-tooling.md) | Workspaces and root scripts with no task runner, and the measured trigger that would justify adopting Turborepo later |
 | [ADR-0006: LLM guardrails and deterministic fallback](docs/adr/0006-llm-guardrails-deterministic-fallback.md) | How model output is constrained, validated, bounded, observed, and replaced when it fails |
 | [ADR template](docs/adr/template.md) | The format every decision record follows, including the alternatives and consequences sections |
 
